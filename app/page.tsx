@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/navbar'
 import type { Profile, Tournament } from '@/lib/types'
 import { TournamentCard } from '@/components/tournament-card'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Trophy, Search, Flag, Users, Star, ChevronRight, MapPin } from 'lucide-react'
 
 async function getFeaturedTournaments(): Promise<Tournament[]> {
@@ -57,27 +58,20 @@ export default async function HomePage() {
             Browse local tournaments by format, sign up with one click, and track your game history. Course managers get a full dashboard to list events and manage registrations.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button
-              size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto gap-2"
-              asChild
+            <Link
+              href="/tournaments"
+              className={cn(buttonVariants({ size: 'lg' }), 'bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto gap-2')}
             >
-              <Link href="/tournaments">
-                <Search className="w-4 h-4" />
-                Browse Tournaments
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white/30 text-white hover:bg-white/10 hover:text-white w-full sm:w-auto gap-2 bg-transparent"
-              asChild
+              <Search className="w-4 h-4" />
+              Browse Tournaments
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              className={cn(buttonVariants({ size: 'lg', variant: 'outline' }), 'border-white/30 text-white hover:bg-white/10 hover:text-white w-full sm:w-auto gap-2 bg-transparent')}
             >
-              <Link href="/auth/sign-up">
-                Create Account
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </Button>
+              Create Account
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
@@ -115,12 +109,13 @@ export default async function HomePage() {
             </h2>
             <p className="text-muted-foreground mt-1">Open for registration</p>
           </div>
-          <Button variant="outline" size="sm" asChild className="hidden sm:flex gap-1.5">
-            <Link href="/tournaments">
-              View all
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </Button>
+          <Link
+            href="/tournaments"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'hidden sm:flex gap-1.5')}
+          >
+            View all
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
         {featured.length > 0 ? (
@@ -138,9 +133,9 @@ export default async function HomePage() {
         )}
 
         <div className="mt-8 text-center sm:hidden">
-          <Button variant="outline" asChild>
-            <Link href="/tournaments">View all tournaments</Link>
-          </Button>
+          <Link href="/tournaments" className={buttonVariants({ variant: 'outline' })}>
+            View all tournaments
+          </Link>
         </div>
       </section>
 
@@ -154,9 +149,12 @@ export default async function HomePage() {
           <p className="text-muted-foreground text-lg mb-8 text-pretty">
             List your tournaments, manage registrations, upload course maps, accept payments, and track your full event history — all from one dashboard.
           </p>
-          <Button size="lg" asChild>
-            <Link href="/auth/sign-up?role=manager">Get started as a Course Manager</Link>
-          </Button>
+          <Link
+            href="/auth/sign-up?role=manager"
+            className={cn(buttonVariants({ size: 'lg' }))}
+          >
+            Get started as a Course Manager
+          </Link>
         </div>
       </section>
 

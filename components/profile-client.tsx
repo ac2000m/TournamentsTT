@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -227,9 +228,7 @@ export function ProfileClient({ profile, registrations, golferBadges, friends, p
               <Trophy className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No tournaments yet</p>
               <p className="text-sm mt-1">Browse events and sign up to get started</p>
-              <Button asChild className="mt-4" variant="outline">
-                <a href="/tournaments">Browse Tournaments</a>
-              </Button>
+  <a href="/tournaments" className={cn(buttonVariants({ variant: 'outline' }), 'mt-4')}>Browse Tournaments</a>
             </div>
           ) : (
             <div className="flex flex-col gap-6">

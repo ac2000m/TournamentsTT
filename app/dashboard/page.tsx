@@ -1,19 +1,18 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
-import { Trophy, Users, DollarSign, PlusCircle, MapPin, TrendingUp, Archive } from 'lucide-react'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Trophy, Users, DollarSign, PlusCircle, MapPin, Archive } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Get manager's courses
   const { data: courses } = await supabase
     .from('courses')
     .select('id,name,city,state')
     .eq('manager_id', user!.id)
 
-  // Get all tournaments for this manager
   const { data: tournaments } = await supabase
     .from('tournaments')
     .select('id,name,status,entry_fee_cents,is_archived,start_date')
@@ -23,7 +22,6 @@ export default async function DashboardPage() {
   const activeTournaments = (tournaments ?? []).filter((t) => !t.is_archived && t.status !== 'archived')
   const archivedTournaments = (tournaments ?? []).filter((t) => t.is_archived || t.status === 'archived')
 
-  // Total registrations across all tournaments
   const tournamentIds = (tournaments ?? []).map((t) => t.id)
   let totalRegs = 0
   let totalRevenueCents = 0
@@ -54,16 +52,12 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground mt-1">Manage your courses and tournaments</p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline" className="gap-1.5">
-            <Link href="/dashboard/courses/new">
-              <MapPin className="w-4 h-4" />New Course
-            </Link>
-          </Button>
-          <Button asChild className="gap-1.5">
-            <Link href="/dashboard/tournaments/new">
-              <PlusCircle className="w-4 h-4" />New Tournament
-            </Link>
-          </Button>
+          <Link href="/dashboard/courses/new" className={cn(buttonVariants({ variant: 'outline' }), 'gap-1.5')}>
+            <MapPin className="w-4 h-4" />New Course
+          </Link>
+          <Link href="/dashboard/tournaments/new" className={cn(buttonVariants(), 'gap-1.5')}>
+            <PlusCircle className="w-4 h-4" />New Tournament
+          </Link>
         </div>
       </div>
 
@@ -84,18 +78,18 @@ export default async function DashboardPage() {
       <section className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-heading text-xl font-semibold text-foreground">Your Courses</h2>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/courses/new">Add Course</Link>
-          </Button>
+          <Link href="/dashboard/courses/new" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Add Course
+          </Link>
         </div>
         {!courses || courses.length === 0 ? (
           <div className="bg-card border border-dashed border-border rounded-2xl p-10 text-center text-muted-foreground">
             <MapPin className="w-8 h-8 mx-auto mb-3 opacity-40" />
             <p className="font-medium">No courses yet</p>
             <p className="text-sm mt-1 mb-4">Add your course to start listing tournaments</p>
-            <Button asChild size="sm">
-              <Link href="/dashboard/courses/new">Add your first course</Link>
-            </Button>
+            <Link href="/dashboard/courses/new" className={buttonVariants({ size: 'sm' })}>
+              Add your first course
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -126,18 +120,18 @@ export default async function DashboardPage() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-heading text-xl font-semibold text-foreground">Active Events</h2>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/tournaments">View all</Link>
-          </Button>
+          <Link href="/dashboard/tournaments" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            View all
+          </Link>
         </div>
         {activeTournaments.length === 0 ? (
           <div className="bg-card border border-dashed border-border rounded-2xl p-10 text-center text-muted-foreground">
             <Trophy className="w-8 h-8 mx-auto mb-3 opacity-40" />
             <p className="font-medium">No active tournaments</p>
             <p className="text-sm mt-1 mb-4">Create your first tournament to start accepting registrations</p>
-            <Button asChild size="sm">
-              <Link href="/dashboard/tournaments/new">Create tournament</Link>
-            </Button>
+            <Link href="/dashboard/tournaments/new" className={buttonVariants({ size: 'sm' })}>
+              Create tournament
+            </Link>
           </div>
         ) : (
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -168,9 +162,12 @@ export default async function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/dashboard/tournaments/${t.id}`}>Manage</Link>
-                      </Button>
+                      <Link
+                        href={`/dashboard/tournaments/${t.id}`}
+                        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                      >
+                        Manage
+                      </Link>
                     </td>
                   </tr>
                 ))}

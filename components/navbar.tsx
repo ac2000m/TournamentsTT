@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -25,7 +26,6 @@ import {
   User,
   LogOut,
   ChevronDown,
-  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -90,18 +90,6 @@ export function Navbar({ profile }: NavbarProps) {
               {label}
             </Link>
           ))}
-          {!isManager && (
-            <Link
-              href="/tournaments"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                pathname === '/friends'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-            </Link>
-          )}
         </nav>
 
         {/* Right side */}
@@ -150,22 +138,24 @@ export function Navbar({ profile }: NavbarProps) {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/auth/login">Sign in</Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link href="/auth/sign-up">Get started</Link>
-              </Button>
+              <Link href="/auth/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+                Sign in
+              </Link>
+              <Link href="/auth/sign-up" className={cn(buttonVariants({ size: 'sm' }))}>
+                Get started
+              </Link>
             </div>
           )}
 
           {/* Mobile hamburger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
+              <button
+                className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'md:hidden')}
+                aria-label="Open menu"
+              >
                 <Menu className="w-5 h-5" />
-                <span className="sr-only">Open menu</span>
-              </Button>
+              </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 pt-8">
               <Link

@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { TournamentForm } from '@/components/tournament-form'
 import { ArchiveButton } from '@/components/archive-button'
 import { FormatBadge } from '@/components/format-badge'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { Tournament, Registration } from '@/lib/types'
@@ -48,10 +49,8 @@ export default async function ManageTournamentPage({ params }: PageProps) {
 
   return (
     <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
-      <div className="flex items-center gap-3 mb-2">
-        <Button asChild variant="ghost" size="icon">
-          <Link href="/dashboard/tournaments"><ArrowLeft className="w-4 h-4" /></Link>
-        </Button>
+  <div className="flex items-center gap-3 mb-2">
+  <Link href="/dashboard/tournaments" className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}><ArrowLeft className="w-4 h-4" /></Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading text-2xl font-bold text-foreground truncate">{t.name}</h1>

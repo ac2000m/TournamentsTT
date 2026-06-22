@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Mail } from 'lucide-react'
 
 export default function SignUpSuccessPage() {
@@ -13,9 +13,9 @@ export default function SignUpSuccessPage() {
         <p className="text-muted-foreground leading-relaxed mb-8">
           We sent a confirmation link to your email address. Click it to activate your account and get started.
         </p>
-        <Button asChild variant="outline">
-          <Link href="/auth/login">Back to login</Link>
-        </Button>
+        <Link href="/auth/login" className={buttonVariants({ variant: 'outline' })}>
+          Back to login
+        </Link>
       </div>
     </div>
   )

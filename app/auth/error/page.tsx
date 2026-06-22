@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
 
 export default function AuthErrorPage() {
@@ -14,12 +14,8 @@ export default function AuthErrorPage() {
           Something went wrong during sign in. The link may have expired. Please try again.
         </p>
         <div className="flex gap-3 justify-center">
-          <Button asChild>
-            <Link href="/auth/login">Back to login</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/auth/sign-up">Create account</Link>
-          </Button>
+          <Link href="/auth/login" className={buttonVariants()}>Back to login</Link>
+          <Link href="/auth/sign-up" className={buttonVariants({ variant: 'outline' })}>Create account</Link>
         </div>
       </div>
     </div>
