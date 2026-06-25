@@ -61,11 +61,13 @@ export default async function ManageTournamentPage({ params }: PageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link href={`/tournaments/${t.id}`} target="_blank">
-              <ExternalLink className="w-3.5 h-3.5" />View
-            </Link>
-          </Button>
+          <Link
+            href={`/tournaments/${t.id}`}
+            target="_blank"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5')}
+          >
+            <ExternalLink className="w-3.5 h-3.5" />View
+          </Link>
           <ArchiveButton tournamentId={t.id} isArchived={t.is_archived} />
         </div>
       </div>

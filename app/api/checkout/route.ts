@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get('origin') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
   const session = await stripe.checkout.sessions.create({
-    ui_mode: 'hosted',
     mode: 'payment',
     success_url: `${origin}/tournaments/${tournamentId}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
     cancel_url: `${origin}/tournaments/${tournamentId}?payment=cancelled`,

@@ -96,19 +96,17 @@ export function Navbar({ profile }: NavbarProps) {
         <div className="flex items-center gap-2">
           {profile ? (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-muted transition-colors">
-                  <Avatar className="w-7 h-7">
-                    <AvatarImage src={profile.avatar_url ?? undefined} />
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium text-foreground hidden sm:block max-w-28 truncate">
-                    {profile.display_name}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
-                </button>
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-muted transition-colors">
+                <Avatar className="w-7 h-7">
+                  <AvatarImage src={profile.avatar_url ?? undefined} />
+                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium text-foreground hidden sm:block max-w-28 truncate">
+                  {profile.display_name}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="font-normal">
@@ -119,11 +117,13 @@ export function Navbar({ profile }: NavbarProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {links.map(({ href, label, icon: Icon }) => (
-                  <DropdownMenuItem key={href} asChild>
-                    <Link href={href} className="flex items-center gap-2 cursor-pointer">
-                      <Icon className="w-4 h-4" />
-                      {label}
-                    </Link>
+                  <DropdownMenuItem
+                    key={href}
+                    className="cursor-pointer"
+                    onClick={() => router.push(href)}
+                  >
+                    <Icon className="w-4 h-4 mr-2" />
+                    {label}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
@@ -149,13 +149,11 @@ export function Navbar({ profile }: NavbarProps) {
 
           {/* Mobile hamburger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <button
-                className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'md:hidden')}
-                aria-label="Open menu"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
+            <SheetTrigger
+              className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'md:hidden')}
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
             </SheetTrigger>
             <SheetContent side="left" className="w-72 pt-8">
               <Link

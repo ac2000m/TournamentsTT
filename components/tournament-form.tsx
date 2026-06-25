@@ -99,7 +99,7 @@ export function TournamentForm({ courses, tournament, managerId }: TournamentFor
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Course *</Label>
-            <Select value={courseId} onValueChange={setCourseId}>
+            <Select value={courseId} onValueChange={(v) => setCourseId(v ?? '')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a course" />
               </SelectTrigger>
