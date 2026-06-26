@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-05-27.dahlia' })
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-06-24.dahlia' })
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   // Use embedded checkout (returns client_secret)
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
-    ui_mode: 'embedded',
+    ui_mode: 'embedded' as const,
     return_url: `${origin}/tournaments/${tournamentId}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
     line_items: [
       {

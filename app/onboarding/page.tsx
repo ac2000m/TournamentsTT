@@ -164,7 +164,7 @@ export default function OnboardingPage() {
       handicap: ghinData?.handicapIndex ?? null,
       ghin_number: ghin.trim() || null,
       birdies18_username: birdies18.trim() || null,
-      favorite_course: selectedCourse?.name ?? favoriteCourse.trim() || null,
+      favorite_course: (selectedCourse?.name ?? favoriteCourse.trim()) || null,
       onboarded: true,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)

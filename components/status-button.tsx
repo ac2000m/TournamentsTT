@@ -66,12 +66,13 @@ export function StatusButton({ tournamentId, currentStatus }: StatusButtonProps)
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button
           variant="outline"
           size="sm"
           className="gap-1.5"
           disabled={loading}
+          type="button"
         >
           <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[currentStatus]}`}>
             {current?.label ?? currentStatus}
