@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -11,7 +10,6 @@ import { toast } from 'sonner'
 import { Flag } from 'lucide-react'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,14 +18,19 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast.error(error.message)
       setLoading(false)
       return
     }
-    router.push('/')
-    router.refresh()
+    if (!data.session) {
+      toast.error('Please confirm your email before signing in.')
+      setLoading(false)
+      return
+    }
+    // Hard redirect so the server picks up the new session cookie
+    window.location.href = '/'
   }
 
   return (
