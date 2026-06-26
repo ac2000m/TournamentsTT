@@ -9,17 +9,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import {
-  Flag, ChevronRight, ChevronLeft, User, Trophy,
-  ExternalLink, Check, Camera, Loader2, RefreshCw
+  Flag, ChevronRight, ChevronLeft, User,
+  ExternalLink, Check, Camera, Loader2, RefreshCw, MapPin, Search
 } from 'lucide-react'
 
-const STEPS = ['personal', 'golf', 'connections'] as const
+const STEPS = ['personal', 'connections', 'course'] as const
 type Step = typeof STEPS[number]
 
 const STEP_LABELS = {
   personal: 'Personal Info',
-  golf: 'Golf Profile',
-  connections: 'Connect Accounts',
+  connections: 'Golf Accounts',
+  course: 'Favorite Course',
 }
 
 interface GhinData {
@@ -28,10 +28,11 @@ interface GhinData {
   clubName: string | null
 }
 
-interface Birdies18Data {
-  username: string
-  handicap: number | null
-  roundsPlayed: number | null
+interface NearbyPlace {
+  place_id: string
+  name: string
+  vicinity: string
+  rating?: number
 }
 
 export default function OnboardingPage() {
@@ -49,19 +50,20 @@ export default function OnboardingPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
 
-  // Golf
-  const [handicap, setHandicap] = useState('')
-
   // Connections
   const [ghin, setGhin] = useState('')
   const [ghinData, setGhinData] = useState<GhinData | null>(null)
   const [ghinLoading, setGhinLoading] = useState(false)
   const [ghinError, setGhinError] = useState<string | null>(null)
-
   const [birdies18, setBirdies18] = useState('')
-  const [birdies18Data, setBirdies18Data] = useState<Birdies18Data | null>(null)
-  const [birdies18Loading, setBirdies18Loading] = useState(false)
-  const [birdies18Error, setBirdies18Error] = useState<string | null>(null)
+  const [birdies18Saved, setBirdies18Saved] = useState(false)
+
+  // Course
+  const [courseSearch, setCourseSearch] = useState('')
+  const [nearbyCourses, setNearbyCourses] = useState<NearbyPlace[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(false)
+  const [selectedCourse, setSelectedCourse] = useState<NearbyPlace | null>(null)
+  const [favoriteCourse, setFavoriteCourse] = useState('')
 
   const stepIndex = STEPS.indexOf(step)
   const isFirst = stepIndex === 0
@@ -74,15 +76,9 @@ export default function OnboardingPage() {
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const data = await res.json()
-      if (data.url) {
-        setAvatarUrl(data.url)
-        toast.success('Photo uploaded!')
-      } else {
-        toast.error(data.error ?? 'Upload failed')
-      }
-    } catch {
-      toast.error('Upload failed')
-    }
+      if (data.url) { setAvatarUrl(data.url); toast.success('Photo uploaded!') }
+      else toast.error(data.error ?? 'Upload failed')
+    } catch { toast.error('Upload failed') }
     setAvatarUploading(false)
   }
 
@@ -92,7 +88,6 @@ export default function OnboardingPage() {
     setGhinError(null)
     setGhinData(null)
     try {
-      // GHIN public lookup via USGA API
       const res = await fetch(
         `https://api2.ghin.com/api/v1/golfers/search.json?per_page=1&page=1&golfer_id=${ghin.trim()}&from_ui=true`,
         { headers: { 'Content-Type': 'application/json' } }
@@ -106,49 +101,48 @@ export default function OnboardingPage() {
           golferName: `${golfer.first_name ?? ''} ${golfer.last_name ?? ''}`.trim() || null,
           clubName: golfer.club_name ?? null,
         })
-        // Auto-fill handicap from GHIN
-        if (hcp !== undefined) setHandicap(String(parseFloat(hcp)))
       } else {
-        setGhinError('No golfer found with that GHIN number')
+        setGhinError('No golfer found with that GHIN number. Check and try again.')
       }
     } catch {
-      setGhinError('Could not connect to GHIN. You can still save your number manually.')
+      setGhinError('Could not reach GHIN right now. Your number is still saved.')
     }
     setGhinLoading(false)
   }
 
-  async function lookup18Birdies() {
-    if (!birdies18.trim()) return
-    setBirdies18Loading(true)
-    setBirdies18Error(null)
-    setBirdies18Data(null)
+  async function searchNearbyCourses(query?: string) {
+    setCoursesLoading(true)
+    setNearbyCourses([])
+    const searchQuery = query ?? courseSearch
+    // Use Google Places text search via our own proxy to avoid CORS + key exposure
     try {
-      // 18Birdies doesn't have a public API — show a helpful message
-      await new Promise(r => setTimeout(r, 800)) // simulate check
-      setBirdies18Data({
-        username: birdies18.trim(),
-        handicap: null,
-        roundsPlayed: null,
-      })
+      const res = await fetch(
+        `/api/places?q=${encodeURIComponent((searchQuery || address || '') + ' golf course')}`)
+      const data = await res.json()
+      setNearbyCourses(data.results ?? [])
+      if ((data.results ?? []).length === 0) toast('No courses found — try a different search')
     } catch {
-      setBirdies18Error('Could not verify username. It will still be saved.')
+      toast.error('Could not search courses right now')
     }
-    setBirdies18Loading(false)
+    setCoursesLoading(false)
   }
 
   function next() {
     if (step === 'personal') {
-      if (!firstName.trim() || !lastName.trim()) {
-        toast.error('Please enter your first and last name')
-        return
-      }
+      if (!firstName.trim()) { toast.error('First name is required'); return }
+      if (!lastName.trim()) { toast.error('Last name is required'); return }
+      if (!email.trim()) { toast.error('Email is required'); return }
+      if (!phone.trim()) { toast.error('Phone number is required'); return }
+      if (!address.trim()) { toast.error('Address is required'); return }
+    }
+    if (step === 'connections') {
+      // Auto-search nearby courses using their address when entering course step
+      searchNearbyCourses(address)
     }
     setStep(STEPS[stepIndex + 1])
   }
 
-  function back() {
-    setStep(STEPS[stepIndex - 1])
-  }
+  function back() { setStep(STEPS[stepIndex - 1]) }
 
   async function finish() {
     setSaving(true)
@@ -159,17 +153,18 @@ export default function OnboardingPage() {
     const displayName = `${firstName.trim()} ${lastName.trim()}`.trim()
 
     const { error } = await supabase.from('profiles').update({
-      first_name: firstName.trim() || null,
-      last_name: lastName.trim() || null,
-      display_name: displayName || null,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      address: address.trim() || null,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      display_name: displayName,
+      email: email.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
       bio: bio.trim() || null,
       avatar_url: avatarUrl,
-      handicap: handicap ? parseFloat(handicap) : (ghinData?.handicapIndex ?? null),
+      handicap: ghinData?.handicapIndex ?? null,
       ghin_number: ghin.trim() || null,
       birdies18_username: birdies18.trim() || null,
+      favorite_course: selectedCourse?.name ?? favoriteCourse.trim() || null,
       onboarded: true,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)
@@ -188,7 +183,6 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-lg">
 
-        {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4">
             <Flag className="w-6 h-6 text-primary-foreground" />
@@ -230,14 +224,12 @@ export default function OnboardingPage() {
                 <h2 className="font-heading text-xl font-semibold">Personal Information</h2>
               </div>
 
-              {/* Avatar upload */}
-              <div className="flex flex-col items-center gap-3 py-2">
+              {/* Avatar */}
+              <div className="flex flex-col items-center gap-2 py-1">
                 <div className="relative">
                   <Avatar className="w-20 h-20">
                     <AvatarImage src={avatarUrl ?? undefined} />
-                    <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
-                      {initials}
-                    </AvatarFallback>
+                    <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">{initials}</AvatarFallback>
                   </Avatar>
                   <button
                     type="button"
@@ -246,15 +238,10 @@ export default function OnboardingPage() {
                   >
                     {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                   </button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])}
-                  />
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])} />
                 </div>
-                <p className="text-xs text-muted-foreground">Profile photo (optional)</p>
+                <p className="text-xs text-muted-foreground">Profile photo <span className="opacity-60">(optional)</span></p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -267,104 +254,48 @@ export default function OnboardingPage() {
                   <Input id="lastName" placeholder="Woods" value={lastName} onChange={e => setLastName(e.target.value)} />
                 </div>
               </div>
-
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email">Email <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
                 <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
               </div>
-
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="phone">Phone number <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Label htmlFor="phone">Phone number <span className="text-destructive">*</span></Label>
                 <Input id="phone" type="tel" placeholder="(312) 555-0100" value={phone} onChange={e => setPhone(e.target.value)} />
               </div>
-
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="address">Address <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Label htmlFor="address">Address <span className="text-destructive">*</span></Label>
                 <Input id="address" placeholder="123 Fairway Dr, Chicago, IL" value={address} onChange={e => setAddress(e.target.value)} />
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="bio">Bio <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                <Textarea id="bio" placeholder="Weekend golfer, scratch player wannabe..." value={bio} onChange={e => setBio(e.target.value)} rows={3} />
+                <Textarea id="bio" placeholder="Weekend golfer, scratch player wannabe..." value={bio} onChange={e => setBio(e.target.value)} rows={2} />
               </div>
             </div>
           )}
 
-          {/* STEP 2: Golf Profile */}
-          {step === 'golf' && (
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy className="w-5 h-5 text-primary" />
-                <h2 className="font-heading text-xl font-semibold">Golf Profile</h2>
-              </div>
-              <p className="text-sm text-muted-foreground -mt-2">
-                Your handicap helps tournament organizers know your skill level.
-                {ghinData?.handicapIndex !== null && ghinData && ' We already pulled this from your GHIN.'}
-              </p>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="handicap">Handicap index <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                <Input
-                  id="handicap"
-                  type="number"
-                  step="0.1"
-                  min="-10"
-                  max="54"
-                  placeholder="e.g. 12.4"
-                  value={handicap}
-                  onChange={e => setHandicap(e.target.value)}
-                  autoFocus
-                />
-                <p className="text-xs text-muted-foreground">Between -10 and 54. Connect GHIN on the next step to auto-fill.</p>
-              </div>
-
-              {ghinData && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm">
-                  <p className="font-medium text-primary mb-1">✓ Synced from GHIN</p>
-                  {ghinData.golferName && <p className="text-foreground">{ghinData.golferName}</p>}
-                  {ghinData.clubName && <p className="text-muted-foreground">{ghinData.clubName}</p>}
-                  {ghinData.handicapIndex !== null && (
-                    <p className="text-foreground font-medium mt-1">Handicap: {ghinData.handicapIndex}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* STEP 3: Connections */}
+          {/* STEP 2: Golf Accounts */}
           {step === 'connections' && (
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-2 mb-1">
                 <ExternalLink className="w-5 h-5 text-primary" />
-                <h2 className="font-heading text-xl font-semibold">Connect Your Accounts</h2>
+                <h2 className="font-heading text-xl font-semibold">Connect Golf Accounts</h2>
               </div>
               <p className="text-sm text-muted-foreground -mt-2">
-                Link your golf accounts to sync your handicap and stats. Both are optional.
+                Link your accounts to sync your handicap. Both are optional — you can skip this step.
               </p>
 
               {/* GHIN */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="ghin" className="text-base font-semibold">GHIN</Label>
-                  <a href="https://www.ghin.com" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                    Find my number →
-                  </a>
+                  <Label className="text-base font-semibold">GHIN</Label>
+                  <a href="https://www.ghin.com" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Find my number →</a>
                 </div>
-                <p className="text-xs text-muted-foreground -mt-2">Your USGA handicap number. We'll sync your handicap index live.</p>
+                <p className="text-xs text-muted-foreground -mt-2">Your USGA handicap number. Hit Sync to pull your live handicap index.</p>
                 <div className="flex gap-2">
-                  <Input
-                    id="ghin"
-                    placeholder="e.g. 1234567"
-                    value={ghin}
-                    onChange={e => { setGhin(e.target.value); setGhinData(null); setGhinError(null) }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={lookupGhin}
-                    disabled={ghinLoading || !ghin.trim()}
-                    className="shrink-0 gap-1.5"
-                  >
+                  <Input placeholder="e.g. 1234567" value={ghin}
+                    onChange={e => { setGhin(e.target.value); setGhinData(null); setGhinError(null) }} />
+                  <Button type="button" variant="outline" onClick={lookupGhin}
+                    disabled={ghinLoading || !ghin.trim()} className="shrink-0 gap-1.5">
                     {ghinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     Sync
                   </Button>
@@ -372,9 +303,7 @@ export default function OnboardingPage() {
                 {ghinError && <p className="text-xs text-destructive">{ghinError}</p>}
                 {ghinData && (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
-                    <p className="font-medium text-green-700 flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5" />Connected
-                    </p>
+                    <p className="font-medium text-green-700 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" />Synced from GHIN</p>
                     {ghinData.golferName && <p className="text-foreground mt-1">{ghinData.golferName}</p>}
                     {ghinData.clubName && <p className="text-muted-foreground text-xs">{ghinData.clubName}</p>}
                     {ghinData.handicapIndex !== null && (
@@ -389,43 +318,118 @@ export default function OnboardingPage() {
               {/* 18Birdies */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="birdies18" className="text-base font-semibold">18Birdies</Label>
-                  <a href="https://18birdies.com" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                    18birdies.com →
-                  </a>
+                  <Label className="text-base font-semibold">18Birdies</Label>
+                  <a href="https://18birdies.com" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">18birdies.com →</a>
                 </div>
                 <p className="text-xs text-muted-foreground -mt-2">Enter your 18Birdies username to link your profile.</p>
                 <div className="flex gap-2">
-                  <Input
-                    id="birdies18"
-                    placeholder="@username"
-                    value={birdies18}
-                    onChange={e => { setBirdies18(e.target.value); setBirdies18Data(null); setBirdies18Error(null) }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={lookup18Birdies}
-                    disabled={birdies18Loading || !birdies18.trim()}
-                    className="shrink-0 gap-1.5"
-                  >
-                    {birdies18Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    Link
+                  <Input placeholder="@username" value={birdies18}
+                    onChange={e => { setBirdies18(e.target.value); setBirdies18Saved(false) }} />
+                  <Button type="button" variant="outline"
+                    onClick={() => { if (birdies18.trim()) { setBirdies18Saved(true); toast.success('18Birdies username saved') } }}
+                    disabled={!birdies18.trim() || birdies18Saved} className="shrink-0 gap-1.5">
+                    <Check className="w-4 h-4" />Save
                   </Button>
                 </div>
-                {birdies18Error && <p className="text-xs text-destructive">{birdies18Error}</p>}
-                {birdies18Data && (
+                {birdies18Saved && (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
-                    <p className="font-medium text-green-700 flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5" />Linked
-                    </p>
-                    <p className="text-muted-foreground text-xs mt-1">@{birdies18Data.username}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Note: 18Birdies doesn't offer a public API — your username is saved for reference.
-                    </p>
+                    <p className="font-medium text-green-700 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" />Linked</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">@{birdies18} — saved to your profile</p>
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* STEP 3: Favorite Course */}
+          {step === 'course' && (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="w-5 h-5 text-primary" />
+                <h2 className="font-heading text-xl font-semibold">Favorite Course</h2>
+              </div>
+              <p className="text-sm text-muted-foreground -mt-2">
+                We've searched for golf courses near your address. Pick your favorite or search for another.
+              </p>
+
+              {/* Search */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search by course name or city..."
+                  value={courseSearch}
+                  onChange={e => setCourseSearch(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchNearbyCourses()}
+                />
+                <Button type="button" variant="outline" onClick={() => searchNearbyCourses()}
+                  disabled={coursesLoading} className="shrink-0 gap-1.5">
+                  {coursesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              {/* Results */}
+              {coursesLoading && (
+                <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Searching nearby courses...</span>
+                </div>
+              )}
+
+              {nearbyCourses.length > 0 && (
+                <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+                  {nearbyCourses.map((course) => (
+                    <button
+                      key={course.place_id}
+                      type="button"
+                      onClick={() => setSelectedCourse(course)}
+                      className={`text-left p-3 rounded-xl border transition-all ${
+                        selectedCourse?.place_id === course.place_id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-sm text-foreground">{course.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{course.vicinity}</p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {course.rating && (
+                            <span className="text-xs text-muted-foreground">★ {course.rating}</span>
+                          )}
+                          {selectedCourse?.place_id === course.place_id && (
+                            <Check className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Manual fallback */}
+              {!selectedCourse && (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="favoriteCourse">Or type it in manually <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Input
+                    id="favoriteCourse"
+                    placeholder="e.g. Pebble Beach Golf Links"
+                    value={favoriteCourse}
+                    onChange={e => setFavoriteCourse(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {selectedCourse && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-sm flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-primary">✓ Selected</p>
+                    <p className="text-foreground mt-0.5">{selectedCourse.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedCourse.vicinity}</p>
+                  </div>
+                  <button type="button" onClick={() => setSelectedCourse(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground">Change</button>
+                </div>
+              )}
             </div>
           )}
 
