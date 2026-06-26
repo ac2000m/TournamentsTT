@@ -12,6 +12,14 @@ create table if not exists profiles (
   handicap numeric(4,1),
   bio text,
   location text,
+  first_name text,
+  last_name text,
+  email text,
+  phone text,
+  address text,
+  ghin_number text,
+  birdies18_username text,
+  onboarded boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
