@@ -16,21 +16,32 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
-    },
+    }
   )
 
+  // Refresh session — this is critical for keeping cookies alive
   const { data: { user } } = await supabase.auth.getUser()
 
-  const protectedPaths = ['/profile', '/dashboard']
+  const protectedPaths = ['/profile', '/dashboard', '/onboarding']
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
 
+  // Redirect logged-out users away from protected pages
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
+    url.searchParams.set('next', request.nextUrl.pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect logged-in users away from auth pages
+  if (isAuthPage && user && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
