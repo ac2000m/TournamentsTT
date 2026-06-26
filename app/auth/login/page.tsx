@@ -29,8 +29,20 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    // Hard redirect so the server picks up the new session cookie
-    window.location.href = '/'
+
+    // Check if user has completed onboarding
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarded, display_name')
+      .eq('id', data.session.user.id)
+      .single()
+
+    // If not onboarded or no display name, send to onboarding
+    if (!profile?.onboarded && !profile?.display_name) {
+      window.location.href = '/onboarding'
+    } else {
+      window.location.href = '/'
+    }
   }
 
   return (

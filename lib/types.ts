@@ -16,6 +16,10 @@ export type RegistrationStatus = 'pending' | 'confirmed' | 'cancelled' | 'waitli
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined' | 'blocked'
 
 export interface Profile {
+  // extended fields
+  ghin_number?: string | null
+  birdies18_username?: string | null
+  onboarded?: boolean
   id: string
   role: UserRole
   display_name: string | null
