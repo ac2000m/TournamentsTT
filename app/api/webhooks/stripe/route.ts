@@ -35,6 +35,36 @@ export async function POST(req: NextRequest) {
         })
         .eq('tournament_id', tournamentId)
         .eq('golfer_id', userId)
+
+      // Check badge eligibility — call the same logic inline
+      const { data: allBadges } = await supabase.from('badges').select('id, slug')
+      const { data: existingBadges } = await supabase
+        .from('golfer_badges')
+        .select('badge_id')
+        .eq('golfer_id', userId)
+      const awardedIds = new Set((existingBadges ?? []).map((b: any) => b.badge_id))
+
+      const { count: regCount } = await supabase
+        .from('registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('golfer_id', userId)
+        .eq('status', 'confirmed')
+
+      const badgesToCheck = [
+        { slug: 'first-tee', qualifies: (regCount ?? 0) >= 1 },
+        { slug: 'five-rounds', qualifies: (regCount ?? 0) >= 5 },
+      ]
+
+      for (const { slug, qualifies } of badgesToCheck) {
+        const badge = (allBadges ?? []).find((b: any) => b.slug === slug)
+        if (badge && !awardedIds.has(badge.id) && qualifies) {
+          await supabase.from('golfer_badges').insert({
+            golfer_id: userId,
+            badge_id: badge.id,
+            awarded_at: new Date().toISOString(),
+          })
+        }
+      }
     }
   }
 

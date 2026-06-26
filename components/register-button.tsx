@@ -47,6 +47,13 @@ export function RegisterButton({
       toast.error(error.message)
       return
     }
+    // Check for newly earned badges
+    fetch('/api/badges/award', { method: 'POST' }).then(async (res) => {
+      const { awarded } = await res.json()
+      if (awarded?.length > 0) {
+        toast.success(`🏅 You earned ${awarded.length} new badge${awarded.length > 1 ? 's' : ''}!`)
+      }
+    }).catch(() => {})
     toast.success('Registered! See you on the course.')
     router.refresh()
   }

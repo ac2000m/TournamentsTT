@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { TournamentForm } from '@/components/tournament-form'
 import { ArchiveButton } from '@/components/archive-button'
+import { StatusButton } from '@/components/status-button'
 import { FormatBadge } from '@/components/format-badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -61,6 +62,7 @@ export default async function ManageTournamentPage({ params }: PageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <StatusButton tournamentId={t.id} currentStatus={t.status} />
           <Link
             href={`/tournaments/${t.id}`}
             target="_blank"

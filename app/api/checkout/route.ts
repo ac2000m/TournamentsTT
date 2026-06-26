@@ -22,12 +22,25 @@ export async function POST(req: NextRequest) {
   if (tournament.status !== 'published') return NextResponse.json({ error: 'Tournament not open' }, { status: 400 })
   if (tournament.entry_fee_cents <= 0) return NextResponse.json({ error: 'No fee required' }, { status: 400 })
 
+  // Check for already confirmed registration
+  const { data: existingReg } = await supabase
+    .from('registrations')
+    .select('id, status')
+    .eq('tournament_id', tournamentId)
+    .eq('golfer_id', user.id)
+    .single()
+
+  if (existingReg?.status === 'confirmed') {
+    return NextResponse.json({ error: 'Already registered' }, { status: 400 })
+  }
+
   const origin = req.headers.get('origin') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
+  // Use embedded checkout (returns client_secret)
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
-    success_url: `${origin}/tournaments/${tournamentId}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
-    cancel_url: `${origin}/tournaments/${tournamentId}?payment=cancelled`,
+    ui_mode: 'embedded',
+    return_url: `${origin}/tournaments/${tournamentId}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
     line_items: [
       {
         quantity: 1,
@@ -49,5 +62,5 @@ export async function POST(req: NextRequest) {
     stripe_session_id: session.id,
   }, { onConflict: 'tournament_id,golfer_id' })
 
-  return NextResponse.json({ url: session.url })
+  return NextResponse.json({ clientSecret: session.client_secret })
 }
